@@ -1,0 +1,23 @@
+from PIL import Image
+
+def decompress_and_save_image(image_path, decompressed_path, original_size):
+    # Load the compressed image
+    compressed_image = Image.open(image_path)
+
+    # Resize the image back to its original size using LANCZOS
+    decompressed_image = compressed_image.resize(original_size, Image.Resampling.LANCZOS)
+
+    # Save the decompressed image back to the specified location
+    decompressed_image.save(decompressed_path)
+
+# Specify the path of the compressed image
+image_path = r'D:\RobSenCom\Python\compressed_image.bmp'
+
+# Specify a different path or name for the decompressed image to test if it's a file access issue
+decompressed_path = r'D:\RobSenCom\Python\decompressed_image.bmp'
+
+# Specify the original size of the image (width, height)
+original_size = (1325, 862)  # Adjust to your actual original size
+
+# Decompress and save the image
+decompress_and_save_image(image_path, decompressed_path, original_size)

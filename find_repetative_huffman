@@ -1,0 +1,72 @@
+# find the common patter and then apply huffman coding
+import numpy as np
+import pickle
+from PIL import Image
+import os
+from collections import defaultdict, Counter
+from heapq import heappush, heappop, heapify
+
+def find_repeated_patterns(data, min_size=3):
+    """Find repeated patterns in data and return an index table mapping."""
+    length = len(data)
+    count = Counter(data[i:j] for i in range(length) for j in range(i + min_size, min(i + min_size + 50, length + 1)))
+    # Filter to keep only patterns that are repeated at least twice and longer than min_size
+    patterns = {key: f"#{idx}" for idx, key in enumerate(key for key, value in count.items() if value > 1 and len(key) > min_size)}
+    return patterns
+
+def apply_pattern_table(data, patterns):
+    """Replace patterns in data using the index table."""
+    pattern_data = data
+    for pattern, idx in patterns.items():
+        pattern_data = pattern_data.replace(pattern, idx)
+    return pattern_data
+
+def huffman_encode(data):
+    """Huffman coding implementation."""
+    frequency = defaultdict(int)
+    for symbol in data:
+        frequency[symbol] += 1
+    heap = [[weight, [symbol, ""]] for symbol, weight in frequency.items()]
+    heapify(heap)
+    while len(heap) > 1:
+        lo = heappop(heap)
+        hi = heappop(heap)
+        for pair in lo[1:]:
+            pair[1] = '0' + pair[1]
+        for pair in hi[1:]:
+            pair[1] = '1' + pair[1]
+        heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+    huff = sorted(heappop(heap)[1:], key=lambda p: (len(p[-1]), p))
+    huffman_code = {a[0]: a[1] for a in huff}
+    encoded_data = ''.join(huffman_code[symbol] for symbol in data)
+    return encoded_data, len(encoded_data) // 8 + (1 if len(encoded_data) % 8 > 0 else 0)
+
+def calculate_size(encoded_data):
+    """Calculate the size of the encoded data in kilobytes."""
+    return encoded_data / 1024
+
+image_path = 'C:/Users/vinay/OneDrive/Pictures/Screenshots/ss.png'
+image = Image.open(image_path)
+print("Image loaded successfully.")
+
+image_file_size = os.path.getsize(image_path) / 1024
+print(f"Image file size: {image_file_size:.2f} KB")
+
+image_array = np.array(image)
+print("Image converted to numpy array.")
+
+serialized_image = pickle.dumps(image_array)
+serialized_data = str(serialized_image)
+print("Image serialized.")
+print(f"Serialized image size: {len(serialized_data) / 1024:.2f} KB")
+
+# Pattern Matching
+patterns = find_repeated_patterns(serialized_data)
+pattern_data = apply_pattern_table(serialized_data, patterns)
+print(f"Data after pattern replacement: {pattern_data[:500]}...")  # Displaying first 500 chars
+
+# Huffman encoding
+compressed_data, compressed_size = huffman_encode(pattern_data)
+compressed_size_kb = calculate_size(compressed_size)
+print("Image compressed using Huffman coding and pattern matching.")
+print(f"Compressed image size: {compressed_size_kb:.2f} KB")

@@ -1,0 +1,62 @@
+import numpy as np
+import pickle
+import base64
+from PIL import Image
+import os
+from heapq import heappush, heappop, heapify
+from collections import defaultdict
+
+def huffman_encode(data):
+    """Function to encode the data using Huffman coding."""
+    frequency = defaultdict(int)
+    for symbol in data:
+        frequency[symbol] += 1
+    
+    # Create a priority queue based on frequency
+    heap = [[weight, [symbol, ""]] for symbol, weight in frequency.items()]
+    heapify(heap)
+    
+    # Merge nodes to create the tree
+    while len(heap) > 1:
+        lo = heappop(heap)
+        hi = heappop(heap)
+        for pair in lo[1:]:
+            pair[1] = '0' + pair[1]
+        for pair in hi[1:]:
+            pair[1] = '1' + pair[1]
+        heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+    
+    # Dictionary to hold the Huffman codes
+    huff = sorted(heappop(heap)[1:], key=lambda p: (len(p[-1]), p))
+    huffman_code = {a[0]: a[1] for a in huff}
+    
+    # Encode the data
+    return ''.join(huffman_code[symbol] for symbol in data), huffman_code
+
+def calculate_size(encoded_data):
+    """Calculate the size of the encoded data in kilobytes."""
+    return (len(encoded_data) // 8 + (1 if len(encoded_data) % 8 > 0 else 0)) / 1024
+
+image_path = 'C:/Users/vinay/OneDrive/Pictures/Screenshots/jpg-vs-jpeg.jpg'
+image = Image.open(image_path)
+print("Image loaded successfully.")
+
+image_file_size = os.path.getsize(image_path) / 1024
+print(f"Image file size: {image_file_size:.2f} KB")
+
+image_array = np.array(image)
+print("Image converted to numpy array.")
+
+serialized_image = pickle.dumps(image_array)
+print("Image serialized.")
+print(f"Serialized image size: {len(serialized_image) / 1024:.2f} KB")
+
+encoded_image = base64.b64encode(serialized_image)
+print("Image encoded in base64.")
+print(f"Encoded image size: {len(encoded_image) / 1024:.2f} KB")
+
+# Huffman encoding
+compressed_data, huffman_code = huffman_encode(encoded_image)
+compressed_size = calculate_size(compressed_data)
+print("Image compressed using Huffman coding.")
+print(f"Compressed image size: {compressed_size:.2f} KB")

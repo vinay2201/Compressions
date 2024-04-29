@@ -1,0 +1,51 @@
+import numpy as np
+import os
+
+def lzw_encode(data):
+    """Function to encode the data using LZW compression."""
+    # Build the dictionary.
+    dict_size = 512
+    dictionary = {chr(i): i for i in range(dict_size)}
+    
+    w = ""
+    result = []
+    for c in data:
+        wc = w + chr(c)
+        if wc in dictionary:
+            w = wc
+        else:
+            result.append(dictionary[w])
+            # Add wc to the dictionary.
+            dictionary[wc] = dict_size
+            dict_size += 1
+            w = chr(c)
+    # Output the code for w.
+    if w:
+        result.append(dictionary[w])
+    return result
+
+def load_compressed_image_data(filepath):
+    """Load the compressed image data from a file into a NumPy array."""
+    with open(filepath, 'rb') as file:
+        # Read the entire file as bytes
+        compressed_data = file.read()
+        # Convert the bytes data into a numpy array
+        compressed_array = np.frombuffer(compressed_data, dtype=np.uint8)
+    return compressed_array
+
+# Example usage:
+image_path = 'D:/RobSenCom/features/features/features_0.pth'
+compressed_image_array = load_compressed_image_data(image_path)
+compressed_array_kb = compressed_image_array.size / 1024
+print("Compressed image data loaded into array. Array size:", compressed_array_kb, "KB")
+# print("Data type of array:", compressed_image_array.dtype)
+
+# LZW encoding
+compressed_data = lzw_encode(compressed_image_array)
+compressed_size_bytes = len(compressed_data) * 2  # assuming each code takes 2 bytes on average
+compressed_size_kb = compressed_size_bytes / 1024
+print("Image compressed using LZW.")
+print(f"Compressed image size: {compressed_size_kb:.2f} KB")
+
+original_file_size = os.path.getsize(image_path) / 1024
+print(f"Original image file size: {original_file_size:.2f} KB")

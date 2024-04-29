@@ -1,0 +1,65 @@
+import heapq
+from collections import Counter
+from PIL import Image
+import os
+
+def build_huffman_tree(symbol_frequency):
+    heap = [[weight, [symbol, ""]] for symbol, weight in symbol_frequency.items()]
+    heapq.heapify(heap)
+    while len(heap) > 1:
+        lo = heapq.heappop(heap)
+        hi = heapq.heappop(heap)
+        for pair in lo[1:]:
+            pair[1] = '0' + pair[1]
+        for pair in hi[1:]:
+            pair[1] = '1' + pair[1]
+        heapq.heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+    return sorted(heapq.heappop(heap)[1:], key=lambda p: (len(p[-1]), p))
+
+def huffman_encode(image):
+    gray_image = image.convert('L')
+    pixel_data = gray_image.getdata()
+    frequency = Counter(pixel_data)
+    huffman_tree = build_huffman_tree(frequency)
+    encoded_data = ''.join([code for pixel in pixel_data for symbol, code in huffman_tree if pixel == symbol])
+    return encoded_data, pixel_data
+
+def lzw_compress(data):
+    dict_size = 256
+    dictionary = {chr(i): i for i in range(dict_size)}
+    w = ""
+    result = []
+    for c in data:
+        wc = w + c
+        if wc in dictionary:
+            w = wc
+        else:
+            result.append(dictionary[w])
+            dictionary[wc] = dict_size
+            dict_size += 1
+            w = c
+    if w:
+        result.append(dictionary[w])
+    return result
+
+def main():
+    image_path = 'path/to/your/image.png'  # Update this path
+    image = Image.open(image_path)
+    file_size_bytes = os.path.getsize(image_path)
+    file_size_kb = file_size_bytes / 1024
+    print(f"Original file size: {file_size_kb:.2f} KB")
+
+    # Huffman encoding
+    huffman_encoded_data, pixel_data = huffman_encode(image)
+    
+    # LZW compression on Huffman encoded data
+    lzw_compressed_data = lzw_compress(huffman_encoded_data)
+    
+    # Calculate size of LZW compressed data
+    compressed_size_bytes = len(lzw_compressed_data) * 4  # Assuming integer storage
+    compressed_size_kb = compressed_size_bytes / 1024
+    
+    print(f"Compressed data size after Huffman and LZW: {compressed_size_kb:.2f} KB")
+
+if __name__ == "__main__":
+    main()

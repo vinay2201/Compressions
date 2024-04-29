@@ -1,0 +1,42 @@
+import heapq
+import collections
+
+def build_huffman_tree(symbol_frequency):
+    heap = [[weight, [symbol, ""]] for symbol, weight in symbol_frequency.items()]
+    heapq.heapify(heap)
+    while len(heap) > 1:
+        lo = heapq.heappop(heap)
+        hi = heapq.heappop(heap)
+        for pair in lo[1:]:
+            pair[1] = '0' + pair[1]
+        for pair in hi[1:]:
+            pair[1] = '1' + pair[1]
+        heapq.heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+    return sorted(heapq.heappop(heap)[1:], key=lambda p: (len(p[-1]), p))
+
+def huffman_encode(data):
+    frequency = collections.Counter(data)
+    huffman_tree = build_huffman_tree(frequency)
+    print("Symbol\tWeight\tHuffman Code")
+    for symbol in huffman_tree:
+        print(f"{symbol[0]}\t{frequency[symbol[0]]}\t{symbol[1]}")
+    return huffman_tree
+
+def main():
+    data = "this is an example for huffman encoding"
+    huffman_tree = huffman_encode(data)
+    
+    # Encoding the data
+    encoded_data = ''.join([code for char in data for symbol, code in huffman_tree if char == symbol])
+    print(f"\nOriginal data: {data}")
+    print(f"Encoded data: {encoded_data}")
+
+    # Calculating the size of original and encoded data
+    original_data_size = len(data) * 8  # Assuming 8 bits per character
+    encoded_data_size = len(encoded_data)  # Directly count the bits in encoded data
+
+    print(f"\nOriginal data size: {original_data_size} bits")
+    print(f"Encoded data size: {encoded_data_size} bits")
+
+if __name__ == "__main__":
+    main()

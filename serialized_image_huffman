@@ -1,0 +1,61 @@
+import numpy as np
+import pickle
+from PIL import Image
+import os
+from heapq import heappush, heappop, heapify
+from collections import defaultdict
+
+def huffman_encode(data):
+    """Function to encode the data using Huffman coding."""
+    frequency = defaultdict(int)
+    for symbol in data:
+        frequency[symbol] += 1
+    
+    # Create a priority queue based on frequency
+    heap = [[weight, [symbol, ""]] for symbol, weight in frequency.items()]
+    heapify(heap)
+    
+    # Merge nodes to create the tree
+    while len(heap) > 1:
+        lo = heappop(heap)
+        hi = heappop(heap)
+        for pair in lo[1:]:
+            pair[1] = '0' + pair[1]
+        for pair in hi[1:]:
+            pair[1] = '1' + pair[1]
+        heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+    
+    # Dictionary to hold the Huffman codes
+    huff = sorted(heappop(heap)[1:], key=lambda p: (len(p[-1]), p))
+    huffman_code = {a[0]: a[1] for a in huff}
+    
+    # Encode the data
+    encoded_data = ''.join(huffman_code[symbol] for symbol in data)
+    bit_length = len(encoded_data)
+    # Compute byte length from bit length
+    byte_length = bit_length // 8 + (1 if bit_length % 8 > 0 else 0)
+    return encoded_data, byte_length
+
+image_path = 'C:/Users/vinay/OneDrive/Pictures/Screenshots/bitmapimage.bmp'
+image = Image.open(image_path)
+print("Image loaded successfully.")
+
+image_file_size = os.path.getsize(image_path)
+print(f"Original image file size: {image_file_size} bytes")
+
+image_array = np.array(image)
+print("Image converted to numpy array.")
+print(image_array.shape)
+
+serialized_image = pickle.dumps(image_array)
+serialized_image_length = len(serialized_image)
+print("Image serialized.")
+print(f"Serialized image size: {serialized_image_length} bytes")
+
+# Huffman encoding
+compressed_data, compressed_size_bytes = huffman_encode(serialized_image)
+print("Image compressed using Huffman coding.")
+print(f"Compressed image size: {compressed_size_bytes} bytes")
+
+print(f"Serialized data message length: {serialized_image_length} bytes")
+print(f"Compressed data message length: {compressed_size_bytes} bytes")

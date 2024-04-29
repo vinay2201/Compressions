@@ -1,0 +1,47 @@
+import os
+from PIL import Image
+
+def lzw_compress(data):
+    """Compress a list of pixel values using the LZW algorithm."""
+    # Initialize the dictionary with single character entries
+    dict_size = 256
+    dictionary = {chr(i): i for i in range(dict_size)}
+    w = ""
+    result = []
+    for c in data:
+        # Check for the combined sequence in the dictionary
+        wc = w + chr(c)
+        if wc in dictionary:
+            w = wc
+        else:
+            # Output the code for w, and add wc to the dictionary
+            result.append(dictionary[w])
+            dictionary[wc] = dict_size
+            dict_size += 1
+            w = chr(c)
+    # Output the code for the last sequence
+    if w:
+        result.append(dictionary[w])
+    return result
+
+def main():
+    image_path = 'C:/Users/vinay/OneDrive/Pictures/Screenshots/ss.png'  # Change to the path of your image file
+    image = Image.open(image_path)
+    image = image.convert('L')  # Convert image to grayscale
+    pixel_data = list(image.getdata())
+    
+    compressed_data = lzw_compress(pixel_data)
+    
+    file_size_bytes = os.path.getsize(image_path)
+    file_size_kb = file_size_bytes / 1024
+    print(f"Original file size: {file_size_kb:.2f} KB")
+    
+    # Calculate the size of the compressed data
+    # Assuming each code in the compressed data is stored as an integer (commonly 4 bytes)
+    compressed_size_bytes = len(compressed_data) * 4
+    compressed_size_kb = compressed_size_bytes / 1024
+    
+    print(f"Compressed data size: {compressed_size_kb:.2f} KB")
+
+if __name__ == "__main__":
+    main()

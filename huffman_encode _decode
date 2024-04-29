@@ -1,0 +1,70 @@
+import numpy as np
+import pickle
+from PIL import Image
+from heapq import heappush, heappop, heapify
+from collections import defaultdict
+import os
+
+def huffman_encode(data):
+    """Function to encode the data using Huffman coding."""
+    frequency = defaultdict(int)
+    for symbol in data:
+        frequency[symbol] += 1
+    
+    heap = []
+    for symbol, freq in frequency.items():
+        heappush(heap, [freq, [symbol, ""]])
+    while len(heap) > 1:
+        lo = heappop(heap)
+        hi = heappop(heap)
+        for pair in lo[1:]:
+            pair[1] = '0' + pair[1]
+        for pair in hi[1:]:
+            pair[1] = '1' + pair[1]
+        heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+    
+    huffman_codes = {a[0]: a[1] for a in heappop(heap)[1:]}
+    encoded_data = ''.join(huffman_codes[symbol] for symbol in data)
+    return encoded_data, huffman_codes, len(encoded_data)
+
+def huffman_decode(encoded_data, huffman_codes):
+    """Function to decode the data using Huffman codes."""
+    reverse_huffman_codes = {v: k for k, v in huffman_codes.items()}
+    current_code = ""
+    decoded_bytes = bytearray()
+    for bit in encoded_data:
+        current_code += bit
+        if current_code in reverse_huffman_codes:
+            decoded_bytes.append(reverse_huffman_codes[current_code])
+            current_code = ""
+    return bytes(decoded_bytes)
+
+image_path = 'C:/Users/vinay/OneDrive/Pictures/Screenshots/jpg-vs-jpeg.jpg'
+image = Image.open(image_path)
+
+image_array = np.array(image)
+serialized_image = pickle.dumps(image_array)
+serialized_length = len(serialized_image)
+
+print("Original image loaded successfully.")
+print(f"Original image size: {os.path.getsize(image_path)} bytes")
+print(f"Image converted to numpy array and serialized. Serialized length: {serialized_length} bytes")
+
+# Huffman encoding
+encoded_data, huffman_codes, encoded_length = huffman_encode(serialized_image)
+print("Image serialized and Huffman encoded.")
+print(f"Huffman encoded data length: {encoded_length} bits, {encoded_length // 8} bytes")
+
+# Huffman decoding
+decoded_bytes = huffman_decode(encoded_data, huffman_codes)
+deserialized_image = pickle.loads(decoded_bytes)
+
+restored_image = Image.fromarray(deserialized_image)
+print("Image Huffman decoded and deserialized successfully.")
+
+# Optionally save and/or display the image
+restored_image.save('restored_image.jpg')  # Save the restored image if necessary
+restored_image.show()  # Display the image
+
+decoded_length = len(decoded_bytes)
+print(f"Decoded data length: {decoded_length} bytes")

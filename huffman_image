@@ -1,0 +1,54 @@
+import heapq
+from collections import Counter
+from PIL import Image
+import os
+
+def build_huffman_tree(symbol_frequency):
+    heap = [[weight, [symbol, ""]] for symbol, weight in symbol_frequency.items()]
+    heapq.heapify(heap)
+    while len(heap) > 1:
+        lo = heapq.heappop(heap)
+        hi = heapq.heappop(heap)
+        for pair in lo[1:]:
+            pair[1] = '0' + pair[1]
+        for pair in hi[1:]:
+            pair[1] = '1' + pair[1]
+        heapq.heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+    return sorted(heapq.heappop(heap)[1:], key=lambda p: (len(p[-1]), p))
+
+def huffman_encode(image):
+    # Convert image to grayscale and get pixel data
+    gray_image = image.convert('L')
+      = gray_image.getdata()
+    print("pixel data", pixel_data)
+    frequency = Counter(pixel_data)
+    print("FREQUENCY", frequency)
+    huffman_tree = build_huffman_tree(frequency)
+    print(huffman_tree)
+    return huffman_tree, pixel_data
+
+def main():
+    image_path = 'C:/Users/vinay/OneDrive/Pictures/Screenshots/ss.png'  # Change to the path of your image file
+    image = Image.open(image_path)
+    file_size_bytes = os.path.getsize(image_path)
+    file_size_kb = file_size_bytes / 1024
+    print(f"The file size is {file_size_kb:.2f} KB.")
+    
+    huffman_tree, pixel_data = huffman_encode(image)
+    
+    # Encoding the pixel data
+    encoded_data = ''.join([code for pixel in pixel_data for symbol, code in huffman_tree if pixel == symbol])
+    
+    # Calculating the size of original and encoded data in bits
+    original_data_size_bits = len(pixel_data) * 8  # Assuming 8 bits per pixel for grayscale
+    encoded_data_size_bits = len(encoded_data)
+
+    # Converting bit counts to kilobytes
+    original_data_size_kb = original_data_size_bits / 8 / 1024
+    encoded_data_size_kb = encoded_data_size_bits / 8 / 1024
+
+    print(f"Original data size: {original_data_size_kb:.2f} KB")
+    print(f"Encoded data size: {encoded_data_size_kb:.2f} KB")
+
+if __name__ == "__main__":
+    main()

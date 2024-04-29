@@ -1,0 +1,48 @@
+import numpy as np
+from PIL import Image
+import os
+import pickle
+from collections import defaultdict
+from heapq import heappush, heappop, heapify
+
+def huffman_encode(data):
+    """Huffman coding implementation."""
+    frequency = defaultdict(int)
+    for symbol in data:
+        frequency[symbol] += 1
+    heap = [[weight, [symbol, ""]] for symbol, weight in frequency.items()]
+    heapify(heap)
+    while len(heap) > 1:
+        lo = heappop(heap)
+        hi = heappop(heap)
+        for pair in lo[1:]:
+            pair[1] = '0' + pair[1]
+        for pair in hi[1:]:
+            pair[1] = '1' + pair[1]
+        heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+    huff = sorted(heappop(heap)[1:], key=lambda p: (len(p[-1]), p))
+    huffman_code = {a[0]: a[1] for a in huff}
+    encoded_data = ''.join(huffman_code[symbol] for symbol in data)
+    return encoded_data, huffman_code
+
+def calculate_size(encoded_data):
+    """Calculate the size of the encoded data in kilobytes."""
+    return len(encoded_data) / 1024
+
+image_path = 'C:/Users/vinay/OneDrive/Pictures/Screenshots/ss.png'
+image = Image.open(image_path)
+image_file_size = os.path.getsize(image_path) / 1024
+print(f"Original Image file size: {image_file_size:.2f} KB")
+
+# Convert image to byte array
+image_byte_array = np.array(image).tobytes()
+
+# Huffman encoding directly on the raw image data
+compressed_data, huffman_codes = huffman_encode(image_byte_array)
+compressed_size = calculate_size(compressed_data)
+print(f"Compressed image size: {compressed_size:.2f} KB")
+
+# Serialize compressed data
+serialized_compressed_data = pickle.dumps(compressed_data)
+serialized_size = len(serialized_compressed_data) / 1024
+print(f"Serialized compressed data size: {serialized_size:.2f} KB")

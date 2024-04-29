@@ -1,0 +1,81 @@
+import numpy as np
+import os
+from heapq import heappush, heappop, heapify
+from collections import defaultdict, Counter
+
+def huffman_encode(data):
+    """Function to encode the data using Huffman coding."""
+    frequency = defaultdict(int)
+    for symbol in data:
+        frequency[symbol] += 1
+    
+    # Create a priority queue based on frequency
+    heap = [[weight, [symbol, ""]] for symbol, weight in frequency.items()]
+    heapify(heap)
+    
+    # Merge nodes to create the tree
+    while len(heap) > 1:
+        lo = heappop(heap)
+        hi = heappop(heap)
+        for pair in lo[1:]:
+            pair[1] = '0' + pair[1]
+        for pair in hi[1:]:
+            pair[1] = '1' + pair[1]
+        heappush(heap, [lo[0] + hi[0]] + lo[1:] + hi[1:])
+    
+    # Dictionary to hold the Huffman codes
+    huff = sorted(heappop(heap)[1:], key=lambda p: (len(p[-1]), p))
+    huffman_code = {a[0]: a[1] for a in huff}
+    
+    # Encode the data
+    encoded_data = ''.join(huffman_code[symbol] for symbol in data)
+    bit_length = len(encoded_data)
+    byte_length = bit_length // 8 + (1 if bit_length % 8 > 0 else 0)
+    return encoded_data, huffman_code, byte_length
+
+def lzw_encode(data):
+    """Function to encode data using LZW compression."""
+    # Create a dictionary of all possible byte values
+    dictionary = {chr(i): i for i in range(256)}
+    dict_size = 256
+    w = ""
+    result = []
+    for symbol in data:
+        wc = w + symbol
+        if wc in dictionary:
+            w = wc
+        else:
+            result.append(dictionary[w])
+            dictionary[wc] = dict_size
+            dict_size += 1
+            w = symbol
+    if w:
+        result.append(dictionary[w])
+    return result
+
+def load_compressed_image_data(filepath):
+    """Load the compressed image data from a file into a NumPy array."""
+    with open(filepath, 'rb') as file:
+        compressed_data = file.read()
+        compressed_array = np.frombuffer(compressed_data, dtype=np.uint8)
+    return compressed_array
+
+# Example usage
+image_path = 'C:/Users/vinay/OneDrive/Pictures/Screenshots/jpg-vs-jpeg.jpg'
+compressed_image_array = load_compressed_image_data(image_path)
+original_file_size_kb = os.path.getsize(image_path) / 1024
+print(f"Original image file size: {original_file_size_kb:.2f} KB")
+
+# Huffman encoding
+huffman_encoded_data, huffman_codes, huffman_encoded_size_bytes = huffman_encode(compressed_image_array)
+huffman_size_kb = huffman_encoded_size_bytes / 1024
+print("Huffman encoding completed.")
+print(f"Huffman Compressed size: {huffman_size_kb:.2f} KB")
+
+# Convert Huffman data to string of bits for LZW input
+huffman_to_lzw_input = ''.join(format(byte, '08b') for byte in huffman_encoded_data.encode('latin1'))  # Treat as raw binary data
+lzw_compressed_data = lzw_encode(huffman_encoded_data)
+lzw_size_bytes = len(lzw_compressed_data) * 2  # assuming each code is stored as an integer
+lzw_size_kb = lzw_size_bytes / 1024
+print("LZW compression on Huffman data completed.")
+print(f"LZW Compressed size: {lzw_size_kb:.2f} KB")
